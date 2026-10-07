@@ -41,6 +41,23 @@ def init_db():
     )
     """)
     
+    # Database migration for existing clients table
+    cur.execute("PRAGMA table_info(clients)")
+    client_columns = [row[1] for row in cur.fetchall()]
+
+    if "membership_status" not in client_columns:
+        cur.execute("ALTER TABLE clients ADD COLUMN membership_status TEXT")
+
+    if "membership_end" not in client_columns:
+        cur.execute("ALTER TABLE clients ADD COLUMN membership_end TEXT")
+
+    if "membership_expiry" in client_columns:
+        cur.execute("""
+            UPDATE clients
+            SET membership_end = membership_expiry
+            WHERE membership_end IS NULL
+        """)
+
     # Progress
     cur.execute("""
     CREATE TABLE IF NOT EXISTS progress (
@@ -298,7 +315,7 @@ class ACEestApp:
         columns = ("date","type","duration","notes")
         self.tree_workouts = ttk.Treeview(self.tab_workouts, columns=columns, show="headings")
         for c in columns:
-            self.tree_workouts.heading(c,c.title())
+            self.tree_workouts.heading(c, text=c.title())
             self.tree_workouts.column(c,width=150)
         self.tree_workouts.pack(fill="both",expand=True)
         ttk.Button(self.tab_workouts,text="Add Workout",command=self.add_workout).pack(pady=5)

@@ -69,6 +69,12 @@ class ACEestApp:
             """
         )
 
+        # Database migration for existing client tables
+        self.cur.execute("PRAGMA table_info(clients)")
+        client_columns = [row[1] for row in self.cur.fetchall()]
+        if "membership_expiry" not in client_columns:
+            self.cur.execute("ALTER TABLE clients ADD COLUMN membership_expiry TEXT")
+
         # Progress
         self.cur.execute(
             """
@@ -158,7 +164,6 @@ class ACEestApp:
         ttk.Button(self.login_win, text="Login", command=self.login_user).pack(pady=20)
 
         # Make login modal
-        self.login_win.transient(self.root)
         self.login_win.grab_set()
         self.login_win.focus_set()
 
@@ -518,7 +523,7 @@ class ACEestApp:
             pdf.cell(0, 10, f"Age: {row[2]}", ln=True)
             pdf.cell(0, 10, f"Height: {row[3]} cm", ln=True)
             pdf.cell(0, 10, f"Weight: {row[4]} kg", ln=True)
-            pdf.cell(0, 10, f"Program: {row[5]}", ln=True)
+            pdf.cell(0, 10, f"Program: {row[5].replace(chr(8211), chr(45))}", ln=True)
             pdf.cell(0, 10, f"Membership Expiry: {row[9]}", ln=True)
         pdf.output(f"{self.current_client}_report.pdf")
         messagebox.showinfo(
