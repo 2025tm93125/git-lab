@@ -6,3 +6,4 @@ __pycache__/
 *.dbs
 Code/
 *.zip
+/aceest_fitness.db
