@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = 'aceest-fitness-assignment-2'
+        IMAGE_NAME = '2025tm93125/aceest-fitness-assignment-2'
         SONAR_PROJECT_KEY = 'aceest-fitness-a2'
     }
 
@@ -72,6 +72,24 @@ pipeline {
                 }
             }
         }
+
+       stage('Push to Docker Hub') {
+    steps {
+        withCredentials([usernamePassword(
+            credentialsId: 'dockerhub-credentials',
+            usernameVariable: 'DOCKERHUB_USER',
+            passwordVariable: 'DOCKERHUB_TOKEN'
+        )]) {
+            sh '''
+                set +x
+                echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USER" --password-stdin
+                docker push ${IMAGE_NAME}:${BUILD_NUMBER}
+                docker push ${IMAGE_NAME}:latest
+                docker logout
+            '''
+        }
+    }
+}     
     }
 
     post {
