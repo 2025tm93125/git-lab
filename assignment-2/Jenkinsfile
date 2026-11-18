@@ -1,0 +1,90 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = 'aceest-fitness-assignment-2'
+        SONAR_PROJECT_KEY = 'aceest-fitness-a2'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                dir('assignment-2') {
+                    sh '''
+                        python3 -m venv .ci-venv
+                        .ci-venv/bin/pip install --upgrade pip
+                        .ci-venv/bin/pip install -r requirements.txt
+                        .ci-venv/bin/pip install pysonar
+                    '''
+                }
+            }
+        }
+
+        stage('Run Pytest') {
+            steps {
+                dir('assignment-2') {
+                    sh '.ci-venv/bin/python -m pytest -v --junitxml=test-results.xml'
+                }
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true,
+                          testResults: 'assignment-2/test-results.xml'
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                dir('assignment-2') {
+                    withSonarQubeEnv('SonarQube-ACEest') {
+                        withCredentials([string(
+                            credentialsId: 'sonar-token-aceest-a2',
+                            variable: 'SONAR_TOKEN'
+                        )]) {
+                            sh '''
+                                .ci-venv/bin/pysonar \
+                                  --sonar-host-url="$SONAR_HOST_URL" \
+                                  --sonar-token="$SONAR_TOKEN" \
+                                  --sonar-project-key="$SONAR_PROJECT_KEY" \
+                                  --sonar-qualitygate-wait \
+                                  --sonar-qualitygate-timeout=300
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                dir('assignment-2') {
+                    sh '''
+                        docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} .
+                        docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:latest
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts artifacts: 'assignment-2/test-results.xml',
+                             allowEmptyArchive: true
+            cleanWs()
+        }
+        success {
+            echo 'ACEest Fitness Assignment 2 pipeline completed successfully.'
+        }
+        failure {
+            echo 'Pipeline failed. Review the stage logs above.'
+        }
+    }
+}
