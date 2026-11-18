@@ -6,7 +6,6 @@ data:
   default.conf: |
     server {
       listen 8080;
-
       location / {
         if ($http_x_experiment_group = "B") {
           proxy_pass http://aceest-fitness-canary-service;
@@ -37,6 +36,9 @@ spec:
           image: nginx:1.27
           ports:
             - containerPort: 8080
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d
           resources:
             requests:
               cpu: "100m"
@@ -46,6 +48,10 @@ spec:
               cpu: "300m"
               memory: "128Mi"
               ephemeral-storage: "256Mi"
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: aceest-fitness-ab-config
 ---
 apiVersion: v1
 kind: Service
