@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aceest-fitness-ab-config
+data:
+  default.conf: |
+    server {
+      listen 8080;
+
+      location / {
+        if ($http_x_experiment_group = "B") {
+          proxy_pass http://aceest-fitness-canary-service;
+        }
+        if ($http_x_experiment_group != "B") {
+          proxy_pass http://aceest-fitness-blue-service;
+        }
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aceest-fitness-ab-router
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aceest-fitness-ab-router
+  template:
+    metadata:
+      labels:
+        app: aceest-fitness-ab-router
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: aceest-fitness-ab-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aceest-fitness-ab-service
+spec:
+  type: NodePort
+  selector:
+    app: aceest-fitness-ab-router
+  ports:
+    - port: 80
+      targetPort: 8080
+      nodePort: 30081
