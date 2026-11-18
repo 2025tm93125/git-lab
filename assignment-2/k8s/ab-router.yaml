@@ -31,18 +31,21 @@ spec:
       labels:
         app: aceest-fitness-ab-router
     spec:
+      automountServiceAccountToken: false
       containers:
         - name: nginx
           image: nginx:1.27
           ports:
             - containerPort: 8080
-          volumeMounts:
-            - name: nginx-config
-              mountPath: /etc/nginx/conf.d
-      volumes:
-        - name: nginx-config
-          configMap:
-            name: aceest-fitness-ab-config
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+              ephemeral-storage: "128Mi"
+            limits:
+              cpu: "300m"
+              memory: "128Mi"
+              ephemeral-storage: "256Mi"
 ---
 apiVersion: v1
 kind: Service
