@@ -6,6 +6,7 @@ spec:
   type: NodePort
   selector:
     app: aceest-fitness
+    version: blue
   ports:
     - protocol: TCP
       port: 80

@@ -17,12 +17,22 @@ spec:
         app: aceest-fitness
         version: green
     spec:
+      automountServiceAccountToken: false
       containers:
         - name: aceest-fitness
           image: 2025tm93125/aceest-fitness-assignment-2:3
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+              ephemeral-storage: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+              ephemeral-storage: "512Mi"
           readinessProbe:
             httpGet:
               path: /health
